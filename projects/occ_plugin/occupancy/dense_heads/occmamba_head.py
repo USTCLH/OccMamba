@@ -31,6 +31,11 @@ class OccMamba_Head(nn.Module):
         up_blocks = [2, 2, 2, 2],
         order_method = [{'order':'H2HE', 'coor_order':'xy', 'inverse':False}],
         drop_path = 0.2,
+        with_lcp = False,
+        lcp_sizes = [2, 4, 6],
+        lcp_stride = [1, 2, 3],
+        lcp_mamba_channel = 32,
+        lcp_mamba_expand = 1,
         loss_weight_cfg=None,
         conv_cfg=dict(type='Conv3d', bias=False),
         norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
@@ -68,6 +73,11 @@ class OccMamba_Head(nn.Module):
         self.drop_path = drop_path
         self.rms_norm = False
         self.fused_add_norm = False
+        self.with_lcp = with_lcp
+        self.lcp_sizes = lcp_sizes
+        self.lcp_stride = lcp_stride
+        self.lcp_mamba_channel = lcp_mamba_channel
+        self.lcp_mamba_expand = lcp_mamba_expand
 
         self.fine_input_dim = 128
         if self.cascade_ratio != 1: 
@@ -174,6 +184,26 @@ class OccMamba_Head(nn.Module):
                 nn.ReLU(inplace=True)))
             mamba_out_channel = next_channel
 
+        if self.with_lcp:
+            lcp_layer_num = 0
+            self.lcp_mamba = nn.ModuleList()
+            self.lcp_linear = nn.ModuleList()
+            for i in range(len(self.lcp_sizes)):
+                lcp_layer_num += (self.lcp_sizes[i] / self.lcp_stride[i])
+                if self.fine_input_dim != self.lcp_mamba_channel:
+                    self.lcp_linear.append(nn.Linear(self.fine_input_dim, self.lcp_mamba_channel))
+                self.lcp_mamba.append(MixerModel(d_model=self.lcp_mamba_channel,
+                                                    n_layer=2,
+                                                    ssm_cfg={"expand": self.lcp_mamba_expand},
+                                                    rms_norm=self.rms_norm,
+                                                    fused_add_norm=self.fused_add_norm,
+                                                    drop_path=self.drop_path))
+            self.lcp_out = nn.Sequential(
+                build_conv_layer(conv_cfg, in_channels=self.lcp_mamba_channel * int(lcp_layer_num), 
+                        out_channels=self.fine_input_dim, kernel_size=1, stride=1, padding=0),
+                build_norm_layer(norm_cfg, self.fine_input_dim)[1],
+                nn.ReLU(inplace=True))
+
         self.occ_pred_conv = nn.Sequential(
                 build_conv_layer(conv_cfg, in_channels=self.fine_input_dim, 
                         out_channels=64, kernel_size=1, stride=1, padding=0),
@@ -249,7 +279,43 @@ class OccMamba_Head(nn.Module):
         voxel_feats = torch.cat(voxel_feats_list, dim=1).contiguous()
         
         return voxel_feats
-            
+
+    def patch_features(self, voxel_feats, lcp_size, shift=0):
+        B, C, W, H, D = voxel_feats.shape
+
+        W_shift = W + shift
+        H_shift = H + shift
+        W_pad = lcp_size * math.ceil(W_shift / lcp_size)
+        H_pad = lcp_size * math.ceil(H_shift / lcp_size)
+
+        pad_feats = torch.zeros((B, C, W_pad, H_pad, D), device=voxel_feats.device)
+        pad_feats[:, :, shift:W_shift, shift:H_shift, :] = voxel_feats
+
+        patch_feats = pad_feats.unfold(2, lcp_size, lcp_size).unfold(3, lcp_size, lcp_size).contiguous()
+
+        N = (W_pad // lcp_size) * (H_pad // lcp_size)
+        L = lcp_size * lcp_size * D
+        patch_feats = patch_feats.view(B, C, N, L)
+
+        return patch_feats.contiguous()
+
+    def resume_patch(self, patch_feats, voxel_shape, lcp_size, shift=0):
+        _, _, N, L = patch_feats.shape
+        B, C, W, H, D = voxel_shape
+
+        W_shift = W + shift
+        H_shift = H + shift
+        W_pad = lcp_size * math.ceil(W_shift / lcp_size)
+        H_pad = lcp_size * math.ceil(H_shift / lcp_size)
+
+        patch_feats = patch_feats.view(B, C, W_pad // lcp_size, H_pad // lcp_size, D, lcp_size, lcp_size)
+        patch_feats = patch_feats.permute(0, 1, 2, 5, 3, 6, 4).contiguous()
+        patch_feats = patch_feats.view(B, C, W_pad, H_pad, D)
+
+        voxel_feats = patch_feats[:, :, shift:W_shift, shift:H_shift, :]
+
+        return voxel_feats.contiguous()
+
     def forward_coarse_voxel(self, voxel_feats):
         output = {}
 
@@ -299,9 +365,45 @@ class OccMamba_Head(nn.Module):
                 voxel_feats = self.upconv[i - len(self.down_blocks)](voxel_feats)
 
         out_voxel_feats = features_list[-1]
-        
         out_voxel_feats = self.mamba_out(out_voxel_feats)
-  
+
+        if self.with_lcp:
+            B, C, W, H, D = out_voxel_feats.shape
+            out_lcp_feats = []
+            for i, lcp_size in enumerate(self.lcp_sizes):
+                stride = self.lcp_stride[i]
+                stride_num = int(lcp_size / stride)
+
+                # (B C W H D) to (B C N L)
+                N_list = []
+                lcp_feats_list = []
+                for j in range(stride_num):
+                    lcp_local_feats = self.patch_features(out_voxel_feats, lcp_size, shift=int(stride * j))
+                    N_list.append(lcp_local_feats.shape[2])
+                    lcp_feats_list.append(lcp_local_feats)
+                lcp_feats = torch.cat(lcp_feats_list, dim=2).contiguous()
+
+                # B C N L to B*N L C'
+                _, _, N, L = lcp_feats.shape
+                lcp_feats = lcp_feats.permute(0, 2, 3, 1).contiguous().view(B*N, L, C).contiguous()
+                if i < len(self.lcp_linear):
+                    lcp_feats = self.lcp_linear[i](lcp_feats)
+                lcp_feats = self.lcp_mamba[i](lcp_feats)
+
+                # (B*N L C') to (B C' N L) to (B C' W H D)
+                _, _, C_new = lcp_feats.shape
+                lcp_feats = lcp_feats.view(B, N, L, C_new).permute(0, 3, 1, 2).contiguous()
+                N_start = 0
+                for j in range(stride_num):
+                    lcp_local_feats = lcp_feats[:, :, N_start:(N_start+N_list[j]), :]
+                    lcp_local_feats = self.resume_patch(lcp_local_feats, (B, C_new, W, H, D), lcp_size, shift=int(stride * j))
+                    out_lcp_feats.append(lcp_local_feats)
+                    N_start = N_start + N_list[j]
+                # out_lcp_feats.append(lcp_feats)
+
+            out_lcp_feats = torch.cat(out_lcp_feats, dim=1).contiguous()
+            out_voxel_feats = self.lcp_out(out_lcp_feats)
+
         out_voxel = self.occ_pred_conv(out_voxel_feats)
 
         return {'occ': [out_voxel],

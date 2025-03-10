@@ -5,9 +5,14 @@
 
 # Abstract 
 
-Training deep learning models for semantic occupancy prediction is challenging due to factors such as a large number of occupancy cells, severe occlusion, limited visual cues, complicated driving scenarios, etc. Recent methods often adopt transformer-based architectures given their strong capability in learning input-conditioned weights and long-range relationships. However, transformer-based networks are notorious for their quadratic computation complexity, seriously undermining their efficacy and deployment in semantic occupancy prediction. Inspired by the global modeling and linear computation complexity of the Mamba architecture, we present the first Mamba-based network for semantic occupancy prediction, termed OccMamba. However, directly applying the Mamba architecture to the occupancy prediction task yields unsatisfactory performance due to the inherent domain gap between the linguistic and 3D domains. To relieve this problem, we present a simple yet effective 3D-to-1D reordering operation, i.e., height-prioritized 2D Hilbert expansion. It can maximally retain the spatial structure of point clouds as well as facilitate the processing of Mamba blocks. Our OccMamba achieves state-of-the-art performance on three prevalent occupancy prediction benchmarks, including OpenOccupancy, SemanticKITTI and SemanticPOSS. Notably, on OpenOccupancy, our OccMamba outperforms the previous state-of-the-art Co-Occ by 3.1 IoU and 3.2 mIoU, respectively.
+Training deep learning models for semantic occupancy prediction is challenging due to factors such as a large number of occupancy cells, severe occlusion, limited visual cues, complicated driving scenarios, etc. Recent methods often adopt transformer-based architectures given their strong capability in learning input-conditioned weights and long-range relationships. However, transformer-based networks are notorious for their quadratic computation complexity, seriously undermining their efficacy and deployment in semantic occupancy prediction. Inspired by the global modeling and linear computation complexity of the Mamba architecture, we present the first Mamba-based network for semantic occupancy prediction, termed OccMamba. Specifically, we first design the hierarchical Mamba module and local context processor to better aggregate global and local contextual information, respectively. Besides, to relieve the inherent domain gap between the linguistic and 3D domains, we present a simple yet effective 3D-to-1D reordering scheme, i.e., height-prioritized 2D Hilbert expansion. It can maximally retain the spatial structure of 3D voxels as well as facilitate the processing of Mamba blocks. Endowed with the aforementioned designs, our OccMamba is capable of directly and efficiently processing large volumes of dense scene grids, achieving state-of-the-art performance across three prevalent occupancy prediction benchmarks, including OpenOccupancy, SemanticKITTI, and SemanticPOSS. Notably, on OpenOccupancy, our OccMamba outperforms the previous state-of-the-art Co-Occ by **5.1%** IoU and **4.3%** mIoU, respectively.
 
 [arXiv](https://arxiv.org/abs/2408.09859) 
+
+# News
+- **[2025/03/10]** Our code has been updated to the new version.
+- **[2025/02/27]** OccMamba is accepted to CVPR 2025!
+- **[2024/09/25]** We have released our code.
 
 # Getting Started
 **1. Create a conda virtual environment and activate it.**
@@ -69,4 +74,15 @@ bash run_eval.sh $PATH_TO_CFG $PATH_TO_CKPT $GPU_NUM --show --show-dir $PATH_TO_
 **Visualization example.**
 ```
 python tools/visual.py $PATH_TO_NPY
+```
+
+# Citation
+If you find this project helpful, please consider citing the following paper:
+```
+@article{li2024occmamba,
+  title={OccMamba: Semantic Occupancy Prediction with State Space Models},
+  author={Li, Heng and Hou, Yuenan and Xing, Xiaohan and Yuexin, Ma and Sun, Xiao and Zhang, Yanyong},
+  journal={arXiv preprint arXiv:2408.09859},
+  year={2024}
+}
 ```

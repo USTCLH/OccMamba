@@ -38,6 +38,12 @@ mamba_down_blocks = [2, 2, 2, 2]
 mamba_up_blocks = [2, 2, 2, 2]
 mamba_order_method = [{'order':'H2HE', 'coor_order':'xy', 'inverse':False}]    #  Height-prioritized 2D Hilbert expansion
 
+with_lcp = True
+lcp_sizes = [3, 5, 7]
+lcp_stride = [3, 5, 7]
+lcp_mamba_channel = 256
+lcp_mamba_expand = 1
+
 dataset_type = 'NuscOCCDataset'
 data_root = 'data/nuscenes/'
 file_client_args = dict(backend='disk')
@@ -103,6 +109,11 @@ model = dict(
         down_blocks = mamba_down_blocks,
         up_blocks = mamba_up_blocks,
         order_method = mamba_order_method,
+        with_lcp = with_lcp,
+        lcp_sizes = lcp_sizes,
+        lcp_stride = lcp_stride,
+        lcp_mamba_channel = lcp_mamba_channel,
+        lcp_mamba_expand = lcp_mamba_expand,
         norm_cfg=dict(type='SyncBN', requires_grad=True),
         cascade_ratio=cascade_ratio,
         final_occ_size=occ_size,
@@ -195,7 +206,7 @@ data = dict(
 
 optimizer = dict(
     type='AdamW',
-    lr=3e-4,
+    lr=5e-4,
     paramwise_cfg=dict(
         custom_keys={
             'img_backbone': dict(lr_mult=0.1),
@@ -215,7 +226,8 @@ runner = dict(type='EpochBasedRunner', max_epochs=15)
 evaluation = dict(
     interval=1,
     pipeline=test_pipeline,
-    save_best='SSC_mean',
+    # save_best='SSC_mean',
+    save_best='SSC_fine_mean',
     rule='greater',
 )
 

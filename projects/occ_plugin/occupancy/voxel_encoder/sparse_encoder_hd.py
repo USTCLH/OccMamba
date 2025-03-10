@@ -7,14 +7,14 @@ from mmdet3d.models.builder import MIDDLE_ENCODERS
 
 try:
     from mmdet3d.ops.spconv import SparseConvTensor, SparseSequential
-    print('use mmdet3d spconv')
+    # print('use mmdet3d spconv')
 except ImportError:
     try:
         from spconv.pytorch import SparseConvTensor, SparseSequential
-        print('use origin spconv')
+        # print('use origin spconv')
     except ImportError:
         from mmcv.ops import SparseConvTensor, SparseSequential
-        print('use mmcv spconv')
+        # print('use mmcv spconv')
 
 @MIDDLE_ENCODERS.register_module()
 class SparseEncoderHD(nn.Module):

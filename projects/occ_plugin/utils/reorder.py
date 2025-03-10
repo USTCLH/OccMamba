@@ -1,6 +1,14 @@
 import numpy as np
 import torch
 
+def default_order_index_within_range(max_x=128, max_y=128, max_z=10):
+    indices = torch.arange(max_x*max_y*max_z)
+    indices = indices.reshape(max_x, max_y, max_z).transpose(0,2).reshape(-1)
+    return indices
+
+def default2D_order_index_within_range(max_x=128, max_y=128, max_z=10):
+    return torch.arange(max_x*max_y*max_z)
+
 def hilbert2D(limit, n, x=0, y=0, order=None):
     if n == 1:
         if x >= limit[0] or y >= limit[1] or x < 0 or y < 0:
