@@ -222,9 +222,9 @@ lr_config = dict(
     warmup_ratio=1.0 / 3,
     min_lr_ratio=1e-3)
 
-runner = dict(type='EpochBasedRunner', max_epochs=15)
+runner = dict(type='EpochBasedRunner', max_epochs=20)
 evaluation = dict(
-    interval=1,
+    interval=20,
     pipeline=test_pipeline,
     # save_best='SSC_mean',
     save_best='SSC_fine_mean',

@@ -216,7 +216,6 @@ class SparseEncoderHD(nn.Module):
                             padding=padding,
                             indice_key=f'spconv{i + 1}',
                             conv_type='SparseConv3d'))
-                            # conv_type='SubMConv3d'))    # change to this
                 elif block_type == 'basicblock':        # this
                     if j == len(blocks) - 1 and i != len(
                             self.encoder_channels) - 1:
@@ -237,45 +236,6 @@ class SparseEncoderHD(nn.Module):
                                 out_channels,
                                 norm_cfg=norm_cfg,
                                 conv_cfg=conv_cfg))     # SubMConv3d
-                
-                    # define SparseBasicBlock as SBB
-
-                    # conv_input:
-                    #     SubMConv3d
-
-                    # encoder_layer1(16):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=2)
-                    # encoder_layer2(32):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=2)
-                    # encoder_layer3(64):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=2)
-                    # encoder_layer4(128):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d)
-
-                    # conv_out:
-                    #     SubMConv3d(128->80)
-
-
-                    # ablation
-
-                    # conv_input:
-                    #     SubMConv3d
-
-                    # encoder_layer1(16):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=2)
-                    # encoder_layer2(32):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=2)
-                    # encoder_layer3(64):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=2)
-                    # encoder_layer4(128):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=1)
-                    # encoder_layer5(256):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d) -> SparseConv3d(stride=1)
-                    # encoder_layer6(512):
-                    #     SBB(SubMConv3d) -> SBB(SubMConv3d)
-
-                    # conv_out:
-                    #     SubMConv3d(512->256) -> SubMConv3d(256->128) -> SubMConv3d(128->80)
                 else:
                     blocks_list.append(
                         make_block(

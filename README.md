@@ -14,6 +14,9 @@ Training deep learning models for semantic occupancy prediction is challenging d
 - **[2025/02/27]** OccMamba is accepted to CVPR 2025!
 - **[2024/09/25]** We have released our code.
 
+# Pipeline
+![OccMamba pipeline](figure/pipeline.png)
+
 # Getting Started
 **1. Create a conda virtual environment and activate it.**
 ```shell
@@ -75,6 +78,17 @@ bash run_eval.sh $PATH_TO_CFG $PATH_TO_CKPT $GPU_NUM --show --show-dir $PATH_TO_
 ```
 python tools/visual.py $PATH_TO_NPY
 ```
+
+# Trained Weights
+**We provide download links and performance for Multimodal OccMamba weights in the table below. Please note that if you encounter a mismatch issue when loading spconv weights due to different versions of spconv, consider performing a permute operation on those weights first..**
+
+| Method & Label Version | mIoU(%) |
+|------------------------|------|
+| [Multimodal OccMamba-128 with v0.0 label](https://drive.google.com/file/d/1u8BJ8ZIkHrU0iIFvEgIg_Lz6iMQCXmDW/view?usp=sharing) | 25.2 |
+| [Multimodal OccMamba-384 with v0.0 label](https://drive.google.com/file/d/1Z7bIhFZTyAAICjvB1TpI_Le-yoe-yXVH/view?usp=sharing) | 26.3 |
+| [Multimodal OccMamba-128 with v0.1 label](https://drive.google.com/file/d/1sXm_inudn2W28QO2eFVvNHi5KMhl52ir/view?usp=sharing) | 26.2 |
+| [Multimodal OccMamba-384 with v0.1 label](https://drive.google.com/file/d/1mNhGkfidLgha0o9jhJZcGCdMl4sj1yuA/view?usp=sharing) | 27.0 |
+
 
 # Citation
 If you find this project helpful, please consider citing the following paper:

@@ -261,7 +261,7 @@ lr_config = dict(
 
 runner = dict(type='EpochBasedRunner', max_epochs=20)
 evaluation = dict(
-    interval=1,
+    interval=20,
     pipeline=test_pipeline,
     # save_best='SSC_mean',
     save_best='SSC_fine_mean',
