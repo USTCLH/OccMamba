@@ -334,8 +334,6 @@ class OccMamba_Head(nn.Module):
         voxel_feats = voxel_feats + pos
         voxel_feats = voxel_feats.contiguous()
 
-        voxel_feats = torch.rand((1,384,150,60,10)).cuda()
-
         # mamba blocks
         shapes = []
         features_list = []
