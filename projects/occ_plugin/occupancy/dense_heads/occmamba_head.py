@@ -334,6 +334,8 @@ class OccMamba_Head(nn.Module):
         voxel_feats = voxel_feats + pos
         voxel_feats = voxel_feats.contiguous()
 
+        voxel_feats = torch.rand((1,384,150,60,10)).cuda()
+
         # mamba blocks
         shapes = []
         features_list = []
@@ -360,7 +362,7 @@ class OccMamba_Head(nn.Module):
                 voxel_feats = self.downsample[i](voxel_feats)
             elif i > (len(self.down_blocks)-1) and i < (len(self.n_blocks)-1):
                 B, C, W, H, D = shapes[(2*(len(self.down_blocks)-1)-i)]
-                voxel_feats = F.interpolate(voxel_feats, size=[H, W, D], mode='trilinear', align_corners=False).contiguous()
+                voxel_feats = F.interpolate(voxel_feats, size=[W, H, D], mode='trilinear', align_corners=False).contiguous()
                 voxel_feats = torch.cat([voxel_feats, features_list[(2*(len(self.down_blocks)-1)-i)]], dim=1)
                 voxel_feats = self.upconv[i - len(self.down_blocks)](voxel_feats)
 
