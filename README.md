@@ -93,10 +93,12 @@ python tools/visual.py $PATH_TO_NPY
 # Citation
 If you find this project helpful, please consider citing the following paper:
 ```
-@article{li2024occmamba,
-  title={OccMamba: Semantic Occupancy Prediction with State Space Models},
-  author={Li, Heng and Hou, Yuenan and Xing, Xiaohan and Yuexin, Ma and Sun, Xiao and Zhang, Yanyong},
-  journal={arXiv preprint arXiv:2408.09859},
-  year={2024}
+@InProceedings{Li_2025_OccMamba,
+    author    = {Li, Heng and Hou, Yuenan and Xing, Xiaohan and Ma, Yuexin and Sun, Xiao and Zhang, Yanyong},
+    title     = {OccMamba: Semantic Occupancy Prediction with State Space Models},
+    booktitle = {Proceedings of the Computer Vision and Pattern Recognition Conference (CVPR)},
+    month     = {June},
+    year      = {2025},
+    pages     = {11949-11959}
 }
 ```
